@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///Users/katewang/Desktop/kiwi-workbench/app/%28auth%29/layout.tsx"],"sourcesContent":["/**\n * 认证相关页面布局\n * \n * 特点：\n * - 无侧边栏/顶部栏\n * - 居中布局\n * - 简洁背景\n */\nexport default function AuthLayout({\n  children,\n}: {\n  children: React.ReactNode\n}) {\n  return (\n    <div className=\"min-h-screen bg-slate-50 flex flex-col\">\n      {children}\n    </div>\n  )\n}\n"],"names":[],"mappings":"AAAA;;;;;;;CAOC;;;;;;AACc,SAAS,WAAW,EACjC,QAAQ,EAGT;IACC,qBACE,8OAAC;QAAI,WAAU;kBACZ;;;;;;AAGP"}}]
+}

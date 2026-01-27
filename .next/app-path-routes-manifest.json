@@ -1,0 +1,22 @@
+{
+  "/(auth)/login/page": "/login",
+  "/(protected)/academic/page": "/academic",
+  "/(protected)/bd/page": "/bd",
+  "/(protected)/contacts/page": "/contacts",
+  "/(protected)/finance/page": "/finance",
+  "/(protected)/knowledge/page": "/knowledge",
+  "/(protected)/marketing/page": "/marketing",
+  "/(protected)/materials/page": "/materials",
+  "/(protected)/messages/page": "/messages",
+  "/(protected)/page": "/",
+  "/(protected)/projects/page": "/projects",
+  "/(protected)/quality/page": "/quality",
+  "/(protected)/sales/customers/[id]/page": "/sales/customers/[id]",
+  "/(protected)/sales/customers/page": "/sales/customers",
+  "/(protected)/sales/page": "/sales",
+  "/(protected)/settings/page": "/settings",
+  "/(protected)/tutor/page": "/tutor",
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/auth/callback/route": "/auth/callback"
+}

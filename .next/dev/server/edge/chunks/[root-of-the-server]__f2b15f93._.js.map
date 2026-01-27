@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 16, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/middleware.ts"],"sourcesContent":["import { NextResponse } from \"next/server\";\nimport type { NextRequest } from \"next/server\";\n\n// 临时验证版：不做任何鉴权，不调用 Supabase\nexport function middleware(_req: NextRequest) {\n  return NextResponse.next();\n}\n\nexport const config = {\n  matcher: [\"/((?!_next/static|_next/image|favicon.ico).*)\"],\n};\n\n"],"names":[],"mappings":";;;;;;AAAA;AAAA;;AAIO,SAAS,WAAW,IAAiB;IAC1C,OAAO,gMAAY,CAAC,IAAI;AAC1B;AAEO,MAAM,SAAS;IACpB,SAAS;QAAC;KAAgD;AAC5D"}}]
+}

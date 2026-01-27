@@ -1,0 +1,22 @@
+{
+  "/(auth)/login/page": "app/(auth)/login/page.js",
+  "/(protected)/academic/page": "app/(protected)/academic/page.js",
+  "/(protected)/bd/page": "app/(protected)/bd/page.js",
+  "/(protected)/contacts/page": "app/(protected)/contacts/page.js",
+  "/(protected)/finance/page": "app/(protected)/finance/page.js",
+  "/(protected)/knowledge/page": "app/(protected)/knowledge/page.js",
+  "/(protected)/marketing/page": "app/(protected)/marketing/page.js",
+  "/(protected)/materials/page": "app/(protected)/materials/page.js",
+  "/(protected)/messages/page": "app/(protected)/messages/page.js",
+  "/(protected)/page": "app/(protected)/page.js",
+  "/(protected)/projects/page": "app/(protected)/projects/page.js",
+  "/(protected)/quality/page": "app/(protected)/quality/page.js",
+  "/(protected)/sales/customers/[id]/page": "app/(protected)/sales/customers/[id]/page.js",
+  "/(protected)/sales/customers/page": "app/(protected)/sales/customers/page.js",
+  "/(protected)/sales/page": "app/(protected)/sales/page.js",
+  "/(protected)/settings/page": "app/(protected)/settings/page.js",
+  "/(protected)/tutor/page": "app/(protected)/tutor/page.js",
+  "/_global-error/page": "app/_global-error/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/auth/callback/route": "app/auth/callback/route.js"
+}
