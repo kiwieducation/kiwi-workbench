@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import {
@@ -24,17 +24,19 @@ import {
   ClipboardList,
   Folder,
   MoreHorizontal,
+  Loader2,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { useToast } from '@/components/shared/Toast'
 import {
-  mockCustomers,
-  mockCustomerTimeline,
+  getCustomerById,
   customerStageConfig,
   riskLevelConfig,
-} from '@/lib/mock/data'
+} from '@/lib/services/customer.service'
+import type { SalesCustomer, TimelineEvent } from '@/types/entities'
 
 /**
  * 销售工作台 - 客户详情页
@@ -47,11 +49,43 @@ import {
 export default function CustomerDetailPage() {
   const params = useParams()
   const customerId = params.id as string
+  const toast = useToast()
+  
+  const [customer, setCustomer] = useState<SalesCustomer | null>(null)
+  const [timeline, setTimeline] = useState<TimelineEvent[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'timeline' | 'tasks' | 'files'>('timeline')
 
-  // 查找客户数据
-  const customer = mockCustomers.find(c => c.id === customerId)
-  const timeline = mockCustomerTimeline[customerId] || []
+  // 加载客户数据
+  useEffect(() => {
+    const loadCustomer = async () => {
+      setIsLoading(true)
+      const result = await getCustomerById(customerId)
+      
+      if (result.success) {
+        setCustomer(result.data)
+      } else {
+        toast.error('加载失败', result.error.message)
+      }
+      setIsLoading(false)
+    }
+    
+    if (customerId) {
+      loadCustomer()
+    }
+  }, [customerId])
+
+  // 加载中状态
+  if (isLoading) {
+    return (
+      <div className="min-h-[calc(100vh-64px)] bg-slate-50/50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 size={32} className="animate-spin text-brand-500 mx-auto mb-3" />
+          <p className="text-sm text-slate-500">加载客户信息...</p>
+        </div>
+      </div>
+    )
+  }
 
   if (!customer) {
     return (
