@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import {
@@ -36,24 +36,34 @@ import {
   customerStageConfig,
   riskLevelConfig,
 } from '@/lib/services/customer.service'
-import type { SalesCustomer, TimelineEvent } from '@/types/entities'
+import { createClient } from '@/lib/supabase/client'
+import type { SalesCustomer } from '@/types/entities'
+
+// Timeline 事件类型
+interface TimelineEvent {
+  id: string
+  type: string
+  title: string
+  description: string | null
+  created_at: string
+  created_by: string
+}
 
 /**
  * 销售工作台 - 客户详情页
- * 
- * 对齐 v8.0 PRD + AI Studio 设计母版：
- * - Hero 区：客户基本信息、状态、操作按钮
- * - 左栏：时间轴、任务列表、文件列表
- * - 右栏：联系方式、关键属性、服务团队、系统信息
  */
 export default function CustomerDetailPage() {
   const params = useParams()
   const customerId = params.id as string
   const toast = useToast()
   
+  // 1️⃣ Supabase client 在组件顶层创建一次
+  const supabase = useMemo(() => createClient(), [])
+  
   const [customer, setCustomer] = useState<SalesCustomer | null>(null)
   const [timeline, setTimeline] = useState<TimelineEvent[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isTimelineLoading, setIsTimelineLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'timeline' | 'tasks' | 'files'>('timeline')
 
   // 加载客户数据
@@ -75,7 +85,68 @@ export default function CustomerDetailPage() {
     }
   }, [customerId])
 
-  // 加载中状态
+  // 2️⃣ 加载 Timeline 数据
+  useEffect(() => {
+    const loadTimeline = async () => {
+      setIsTimelineLoading(true)
+      
+      const { data, error } = await supabase
+        .from('customer_activities')
+        .select('id, type, content, created_at, actor_id')
+        .eq('customer_id', customerId)
+        .order('created_at', { ascending: false })
+      
+      if (error) {
+        console.error('Failed to load timeline:', error)
+        setTimeline([])
+      } else {
+        // 3️⃣ 简单映射，不扩散字段
+        const events: TimelineEvent[] = (data || []).map((item: { id: string; type: string | null; content: string | null; created_at: string; actor_id: string | null }) => ({
+          id: item.id,
+          type: item.type || 'note',
+          title: getActivityTitle(item.type),
+          description: item.content,
+          created_at: formatDateTime(item.created_at),
+          created_by: item.actor_id || '系统',
+        }))
+        setTimeline(events)
+      }
+      
+      setIsTimelineLoading(false)
+    }
+    
+    if (customerId) {
+      loadTimeline()
+    }
+  }, [customerId, supabase])
+
+  function getActivityTitle(type: string | null): string {
+    switch (type) {
+      case 'call': return '电话跟进'
+      case 'note': return '添加备注'
+      case 'email': return '发送邮件'
+      case 'meeting': return '会议记录'
+      case 'contract': return '签约'
+      default: return '跟进记录'
+    }
+  }
+
+  function formatDateTime(isoString: string): string {
+    try {
+      const date = new Date(isoString)
+      return date.toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    } catch {
+      return isoString
+    }
+  }
+
+  // 加载中状态（客户 + Timeline 都加载完才算完成）
   if (isLoading) {
     return (
       <div className="min-h-[calc(100vh-64px)] bg-slate-50/50 flex items-center justify-center">
@@ -108,7 +179,6 @@ export default function CustomerDetailPage() {
   const stageConfig = customerStageConfig[customer.stage]
   const riskConfig = riskLevelConfig[customer.riskLevel]
 
-  // 时间轴图标
   const getTimelineIcon = (type: string) => {
     switch (type) {
       case 'call':
@@ -141,7 +211,6 @@ export default function CustomerDetailPage() {
     }
   }
 
-  // 风险图标
   const getRiskIcon = () => {
     switch (customer.riskLevel) {
       case 'high':
@@ -233,8 +302,8 @@ export default function CustomerDetailPage() {
                         <div className="font-medium text-slate-900">{customer.lastContact}</div>
                       </div>
                       <div>
-                        <div className="text-slate-500">下一步动作</div>
-                        <div className="font-medium text-brand-600">{customer.nextAction}</div>
+                        <div className="text-slate-500">下次跟进</div>
+                        <div className="font-medium text-slate-900">-</div>
                       </div>
                     </div>
                   </div>
@@ -274,7 +343,12 @@ export default function CustomerDetailPage() {
                 {/* 时间轴 Tab */}
                 {activeTab === 'timeline' && (
                   <div className="space-y-6">
-                    {timeline.length > 0 ? (
+                    {isTimelineLoading ? (
+                      <div className="text-center py-8">
+                        <Loader2 size={24} className="animate-spin text-brand-500 mx-auto mb-2" />
+                        <p className="text-sm text-slate-400">加载跟进记录...</p>
+                      </div>
+                    ) : timeline.length > 0 ? (
                       <div className="relative border-l-2 border-slate-100 ml-3 space-y-6">
                         {timeline.map((event) => (
                           <div key={event.id} className="relative pl-8">
