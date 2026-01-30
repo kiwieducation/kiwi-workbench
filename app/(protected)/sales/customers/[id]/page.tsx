@@ -65,6 +65,8 @@ export default function CustomerDetailPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isTimelineLoading, setIsTimelineLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'timeline' | 'tasks' | 'files'>('timeline')
+  const [newActivityContent, setNewActivityContent] = useState('')
+  const [isSubmittingActivity, setIsSubmittingActivity] = useState(false)
 
   // 加载客户数据
   useEffect(() => {
@@ -144,6 +146,53 @@ export default function CustomerDetailPage() {
     } catch {
       return isoString
     }
+  }
+
+  const handleAddActivity = async () => {
+    const content = newActivityContent.trim()
+    if (!content) {
+      toast.error('内容不能为空', '请输入跟进内容')
+      return
+    }
+
+    setIsSubmittingActivity(true)
+    const { data: userData, error: userError } = await supabase.auth.getUser()
+    if (userError) {
+      setIsSubmittingActivity(false)
+      toast.error('获取用户失败', userError.message)
+      return
+    }
+
+    const { data, error } = await supabase
+      .from('customer_activities')
+      .insert({
+        customer_id: customerId,
+        actor_id: userData?.user?.id || null,
+        type: 'note',
+        content,
+      })
+      .select('id, type, content, created_at, actor_id')
+      .single()
+
+    if (error) {
+      setIsSubmittingActivity(false)
+      toast.error('新增失败', error.message)
+      return
+    }
+
+    const newEvent: TimelineEvent = {
+      id: data.id,
+      type: data.type || 'note',
+      title: getActivityTitle(data.type),
+      description: data.content,
+      created_at: formatDateTime(data.created_at),
+      created_by: data.actor_id || '系统',
+    }
+
+    setTimeline(prev => [newEvent, ...prev])
+    setNewActivityContent('')
+    setIsSubmittingActivity(false)
+    toast.success('已新增跟进记录')
   }
 
   // 加载中状态（客户 + Timeline 都加载完才算完成）
@@ -343,6 +392,21 @@ export default function CustomerDetailPage() {
                 {/* 时间轴 Tab */}
                 {activeTab === 'timeline' && (
                   <div className="space-y-6">
+                    <div className="bg-slate-50 rounded-lg p-4">
+                      <div className="text-sm font-medium text-slate-900 mb-2">新增跟进记录</div>
+                      <textarea
+                        value={newActivityContent}
+                        onChange={(event) => setNewActivityContent(event.target.value)}
+                        placeholder="填写跟进内容..."
+                        className="w-full min-h-[88px] rounded-md border border-slate-200 bg-white p-3 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                      />
+                      <div className="flex justify-end mt-3">
+                        <Button onClick={handleAddActivity} disabled={isSubmittingActivity}>
+                          {isSubmittingActivity ? <Loader2 size={14} className="animate-spin mr-2" /> : null}
+                          保存跟进
+                        </Button>
+                      </div>
+                    </div>
                     {isTimelineLoading ? (
                       <div className="text-center py-8">
                         <Loader2 size={24} className="animate-spin text-brand-500 mx-auto mb-2" />

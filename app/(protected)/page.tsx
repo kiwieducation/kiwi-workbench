@@ -2,7 +2,6 @@ import Link from 'next/link'
 import {
   ArrowUpRight,
   ArrowDownRight,
-  CheckCircle2,
   Clock,
   Users,
   UserPlus,
@@ -13,30 +12,42 @@ import {
   MessageSquare,
   TrendingUp,
   AlertCircle,
+  Activity,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
-  mockDashboardKPIs,
-  mockTodoItems,
-  mockUpcomingEvents,
-  mockCurrentUser,
-  mockConversations,
-} from '@/lib/mock/data'
+  getDashboardKPIs,
+  getTodoItems,
+  getRecentActivities,
+  getCurrentUserForDashboard,
+} from '@/lib/services/dashboard.service'
+import { mockConversations } from '@/lib/mock/data'
 
 /**
  * 个人首页（Dashboard）
- * 
+ *
  * 对齐 v8.0 PRD + AI Studio 设计母版：
  * - 沉浸式欢迎区域（问候语 + 每日金句 + 在线协作）
  * - KPI 指标卡片
  * - 我的待办（可筛选）
  * - 快捷操作
- * - 近期日程
+ * - 近期动态（替代日程，本阶段不接入日程数据）
  * - 最新消息提醒
  */
 export default async function DashboardPage() {
+  // 从 Supabase 获取真实数据
+  const [currentUser, kpis, todoItems, recentActivities] = await Promise.all([
+    getCurrentUserForDashboard(),
+    getDashboardKPIs(),
+    getTodoItems(),
+    getRecentActivities(),
+  ])
+
+  // 用户名（降级为"同事"）
+  const userName = currentUser?.name || '同事'
+
   // 获取当前时间段问候语
   const getGreeting = (): string => {
     const hour = new Date().getHours()
@@ -96,7 +107,7 @@ export default async function DashboardPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-slate-100 pb-6">
         <div className="flex-1">
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
-            {getGreeting()}，{mockCurrentUser.name} 👋
+            {getGreeting()}，{userName} 👋
           </h1>
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <span className="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded flex items-center gap-1">
@@ -135,7 +146,7 @@ export default async function DashboardPage() {
 
       {/* ========== KPI 指标卡片 ========== */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {mockDashboardKPIs.map((kpi, idx) => {
+        {kpis.map((kpi, idx) => {
           const isNegativeGood = kpi.label.includes('逾期')
           const trendColor = kpi.trend === 'up'
             ? (isNegativeGood ? 'text-red-500' : 'text-emerald-600')
@@ -192,45 +203,53 @@ export default async function DashboardPage() {
               </div>
             </CardHeader>
             <CardContent className="p-0">
-              {mockTodoItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center gap-4 px-6 py-4 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors group cursor-pointer"
-                >
-                  <div className="w-5 h-5 rounded-full border-2 border-slate-300 group-hover:border-brand-500 transition-colors flex-shrink-0"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-slate-900 text-sm truncate">
-                      {item.title}
+              {todoItems.length > 0 ? (
+                <>
+                  {todoItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center gap-4 px-6 py-4 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors group cursor-pointer"
+                    >
+                      <div className="w-5 h-5 rounded-full border-2 border-slate-300 group-hover:border-brand-500 transition-colors flex-shrink-0"></div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-slate-900 text-sm truncate">
+                          {item.title}
+                        </div>
+                        <div className="text-xs text-slate-500 mt-0.5 flex items-center gap-2">
+                          <span className="flex items-center gap-1">
+                            <Clock size={10} />
+                            截止：{item.due_date ? formatDate(item.due_date) : '无'}
+                          </span>
+                          {item.related_type && (
+                            <span className="text-slate-400">•</span>
+                          )}
+                          {item.related_type === 'student' && (
+                            <span>关联学员</span>
+                          )}
+                          {item.related_type === 'customer' && (
+                            <span>关联客户</span>
+                          )}
+                        </div>
+                      </div>
+                      <Badge variant={getPriorityVariant(item.priority)}>
+                        {getPriorityLabel(item.priority)}
+                      </Badge>
                     </div>
-                    <div className="text-xs text-slate-500 mt-0.5 flex items-center gap-2">
-                      <span className="flex items-center gap-1">
-                        <Clock size={10} />
-                        截止：{item.due_date ? formatDate(item.due_date) : '无'}
-                      </span>
-                      {item.related_type && (
-                        <span className="text-slate-400">•</span>
-                      )}
-                      {item.related_type === 'student' && (
-                        <span>关联学员</span>
-                      )}
-                      {item.related_type === 'customer' && (
-                        <span>关联客户</span>
-                      )}
-                    </div>
+                  ))}
+                  <div className="px-6 py-3 bg-slate-50 border-t border-slate-100">
+                    <Link
+                      href="/projects"
+                      className="text-sm text-brand-600 hover:text-brand-700 font-medium"
+                    >
+                      查看全部待办 →
+                    </Link>
                   </div>
-                  <Badge variant={getPriorityVariant(item.priority)}>
-                    {getPriorityLabel(item.priority)}
-                  </Badge>
+                </>
+              ) : (
+                <div className="px-6 py-8 text-center text-slate-400 text-sm">
+                  暂无待办任务
                 </div>
-              ))}
-              <div className="px-6 py-3 bg-slate-50 border-t border-slate-100">
-                <Link
-                  href="/projects"
-                  className="text-sm text-brand-600 hover:text-brand-700 font-medium"
-                >
-                  查看全部待办 →
-                </Link>
-              </div>
+              )}
             </CardContent>
           </Card>
 
@@ -335,46 +354,55 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
 
-          {/* 近期日程 */}
+          {/* 近期动态（替代日程，本阶段不接入日程数据） */}
           <Card>
             <CardHeader className="py-4 px-6">
               <CardTitle className="flex items-center gap-2">
-                <Calendar size={18} className="text-brand-600" />
-                近期日程
+                <Activity size={18} className="text-brand-600" />
+                近期动态
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 px-6 pb-6">
-              {mockUpcomingEvents.map((event) => {
-                const eventDate = new Date(event.date)
-                return (
-                  <div key={event.id} className="flex gap-3">
-                    <div className="flex-shrink-0 w-12 text-center bg-slate-100 rounded-lg py-1.5 px-2">
-                      <div className="text-[10px] text-slate-500 font-medium uppercase">
-                        {eventDate.toLocaleDateString('zh-CN', { month: 'short' })}
+              {recentActivities.length > 0 ? (
+                <>
+                  {recentActivities.map((activity) => {
+                    const activityDate = new Date(activity.created_at)
+                    return (
+                      <div key={activity.id} className="flex gap-3">
+                        <div className="flex-shrink-0 w-12 text-center bg-slate-100 rounded-lg py-1.5 px-2">
+                          <div className="text-[10px] text-slate-500 font-medium uppercase">
+                            {activityDate.toLocaleDateString('zh-CN', { month: 'short' })}
+                          </div>
+                          <div className="text-lg font-bold text-slate-900">
+                            {activityDate.getDate()}
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-sm font-medium text-slate-900 line-clamp-2">
+                            {activity.title}
+                          </div>
+                          <div className="text-xs text-slate-500 flex items-center gap-1 mt-1">
+                            <Clock size={12} />
+                            {activityDate.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-lg font-bold text-slate-900">
-                        {eventDate.getDate()}
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <div className="text-sm font-medium text-slate-900">
-                        {event.title}
-                      </div>
-                      <div className="text-xs text-slate-500 flex items-center gap-1 mt-1">
-                        <Clock size={12} /> {event.time}
-                      </div>
-                    </div>
+                    )
+                  })}
+                  <div className="pt-2 border-t border-slate-100">
+                    <Link
+                      href="/projects"
+                      className="text-sm text-brand-600 hover:text-brand-700 font-medium"
+                    >
+                      查看全部动态 →
+                    </Link>
                   </div>
-                )
-              })}
-              <div className="pt-2 border-t border-slate-100">
-                <Link
-                  href="/projects"
-                  className="text-sm text-brand-600 hover:text-brand-700 font-medium"
-                >
-                  查看全部日程 →
-                </Link>
-              </div>
+                </>
+              ) : (
+                <div className="text-center text-slate-400 text-sm py-4">
+                  暂无近期动态
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

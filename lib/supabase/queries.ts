@@ -7,6 +7,19 @@
 
 import { createClient } from '@/lib/supabase/client'
 import type { User, Customer, Student, Task, KnowledgeDocument, Project } from '@/types/entities'
+import type { Database } from '@/types/database'
+
+type CustomerStage = Database['public']['Tables']['customers']['Row']['stage']
+type CustomerStageOrAll = CustomerStage | 'all'
+
+type StudentStatus = Database['public']['Tables']['students']['Row']['status']
+type StudentStatusOrAll = StudentStatus | 'all'
+
+type TaskStatus = Database['public']['Tables']['tasks']['Row']['status']
+type TaskStatusOrAll = TaskStatus | 'all'
+
+type TaskPriority = Database['public']['Tables']['tasks']['Row']['priority']
+type TaskPriorityOrAll = TaskPriority | 'all'
 
 // ============================================
 // 用户相关查询
@@ -65,7 +78,7 @@ export async function getUserById(id: string): Promise<User | null> {
 interface CustomerQueryOptions {
   page?: number
   pageSize?: number
-  stage?: string
+  stage?: CustomerStageOrAll
   ownerId?: string
 }
 
@@ -129,7 +142,7 @@ export async function getCustomerByIdFromDB(id: string): Promise<Customer | null
 interface StudentQueryOptions {
   page?: number
   pageSize?: number
-  status?: string
+  status?: StudentStatusOrAll
   tutorId?: string
 }
 
@@ -172,8 +185,8 @@ export async function getStudentsFromDB(options?: StudentQueryOptions) {
 
 interface TaskQueryOptions {
   assigneeId?: string
-  status?: string
-  priority?: string
+  status?: TaskStatusOrAll
+  priority?: TaskPriorityOrAll
 }
 
 /**
@@ -251,7 +264,7 @@ export async function getKnowledgeDocumentsFromDB(folderId?: string): Promise<Kn
 export async function getCustomerStatsFromDB(): Promise<Record<string, number>> {
   const supabase = createClient()
   
-  const stages = ['new', 'following', 'proposal', 'signed', 'lost']
+  const stages: CustomerStage[] = ['new', 'following', 'proposal', 'signed', 'lost']
   const stats: Record<string, number> = {}
   
   for (const stage of stages) {
@@ -272,7 +285,7 @@ export async function getCustomerStatsFromDB(): Promise<Record<string, number>> 
 export async function getTaskStatsFromDB(userId?: string): Promise<Record<string, number>> {
   const supabase = createClient()
   
-  const statuses = ['pending', 'in_progress', 'completed', 'cancelled']
+  const statuses: TaskStatus[] = ['pending', 'in_progress', 'completed', 'rejected']
   const stats: Record<string, number> = {}
   
   for (const status of statuses) {

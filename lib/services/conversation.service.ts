@@ -15,6 +15,7 @@ import type {
   ConversationType,
   MessageType,
 } from '@/types/entities'
+import type { Json } from '@/types/database'
 
 // ============================================
 // Mock 数据（开发模式 fallback）
@@ -318,7 +319,7 @@ interface DBMessage {
   to_user_id: string | null
   room_id: string | null
   msg_type: string
-  content: Record<string, unknown> | string
+  content: Json
   send_time: string
   synced_at: string
   created_at: string
@@ -394,9 +395,11 @@ function transformMessage(data: DBMessage): Message {
   }
 }
 
-function extractTextContent(content: Record<string, unknown> | string | null | undefined): string {
-  if (!content) return '[空消息]'
+function extractTextContent(content: Json | undefined): string {
+  if (content === null || content === undefined) return '[空消息]'
   if (typeof content === 'string') return content
+  if (typeof content === 'number' || typeof content === 'boolean') return String(content)
+  if (Array.isArray(content)) return JSON.stringify(content)
 
   if (content.text) return String(content.text)
   if (content.content) return String(content.content)
